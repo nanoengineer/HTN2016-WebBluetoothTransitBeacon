@@ -1,0 +1,7 @@
+# Eclipse
+*.project
+*.cproject
+_build/
+
+# OSX
+*.DS_Store
