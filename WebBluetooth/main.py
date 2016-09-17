@@ -1,4 +1,4 @@
-from flask import Flask ,Blueprint, render_template
+from flask import Flask
 from blueprints.stop_pages import stop_pages
 from blueprints.onboard_pages import onboard_pages
 
@@ -14,5 +14,3 @@ def hello_world():
     return 'Hello World!'
 
 
-if __name__ == '__main__':
-    app.run()
