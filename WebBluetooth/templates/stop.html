@@ -10,19 +10,6 @@
         $(el).find('.expanded').toggle('hidden')
     }
 </script>
-
-<script src="https://www.gstatic.com/firebasejs/3.4.0/firebase.js"></script>
-<script>
-  // Initialize Firebase
-  var config = {
-    apiKey: "AIzaSyBfyz3Z_dqNHK7dn0JJT4GwqXP1R_xizWo",
-    authDomain: "hackthenorth16-1532.firebaseapp.com",
-    databaseURL: "https://hackthenorth16-1532.firebaseio.com",
-    storageBucket: "hackthenorth16-1532.appspot.com",
-    messagingSenderId: "156903675042"
-  };
-  firebase.initializeApp(config);
-</script>
 <style>
  .expanded {
 
@@ -31,12 +18,12 @@
 </head>
 
 <div class="row">
-    {% for i in range(10) %}
+    {% for key, val in routes.iteritems() %}
     <div class="col-xs-12 col-md-6" style="text-align: center; display: inline-block; padding: 20px;">
         <div class="row">
             <button class="btn btn-default" style="width: 80%;  background-color: #FCAD0F; color: white;" onclick="expandSelected(this)">
-                <div class="col-xs-6" style="text-align: left; "> Bus {{ i }} </div>
-                <div style="text-align: right;">{{ i }} Mins</div>
+                <div class="col-xs-6" style="text-align: left; "> {{ key }} {{ val.name }} </div>
+                <div style="text-align: right;">{{ val.stop_times }} Mins</div>
                 <div class="expanded" style="text-align: right; display: none">asdfasdf</div>
 
             </button>
