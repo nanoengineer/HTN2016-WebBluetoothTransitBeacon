@@ -19,7 +19,7 @@
     var stopRequestCharacteristic;
     var helpRequestCharacteristic;
     var sub_key;
-    var currentStop = 'stop_2';
+    var currentStop;
 {##}
 {#    $(document).ready(function(){#}
 {#        subscribe()#}
@@ -61,6 +61,7 @@
     }
 
     function recalcStops(event){
+        stopRequestCharacteristic.writeValue(new Uint8Array([0]));
         currentStop = event.target.value.getUint8(0);
         $('.current-stop').removeClass('current-stop');
         $('#stop_' + currentStop).addClass('current-stop');
@@ -69,9 +70,19 @@
     }
 
     function getPushNotifications(stop_num){
+        if (stop_num[5] == 9) {
+            stop_num = 'stop_0'
+        }
+        else{
+            stop_num = "stop_" + (parseInt(stop_num[5]) + 1)
+        }
         $.ajax({
             url:'/ajax/pull?' + $.param({stop_num:stop_num}), type:'GET',
             success:function(res) {
+                if (!res || res.length === 0){
+                    return
+                }
+                stopRequestCharacteristic.writeValue(new Uint8Array([1]));
                 for (var i = 0; i < res.length; i++) {
                     sendPushNotification(res[i])
                 }

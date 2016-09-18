@@ -29,7 +29,7 @@ def get_route_stops(route_num):
 
 def write_push_notification(stop_num, sub_key):
     res = requests.get('https://hackthenorth16-1532.firebaseio.com/push.json')
-    if not res.json().get(stop_num):
+    if not res.json():
         data = {stop_num: [sub_key]}
     else:
         curr_keys = res.json().get(stop_num)
@@ -42,8 +42,9 @@ def write_push_notification(stop_num, sub_key):
 def retrieve_push_notifications(stop_num):
     res = requests.get('https://hackthenorth16-1532.firebaseio.com/push.json')
     if res.json():
+        requests.delete('https://hackthenorth16-1532.firebaseio.com/push/' + stop_num + '.json')
         return res.json().get(stop_num)
-    return None
+    return []
 
 if __name__ == '__main__':
     import pdb; pdb.set_trace()
