@@ -26,7 +26,8 @@ SRC_FILES += \
   $(SDK_ROOT)/components/drivers_nrf/uart/nrf_drv_uart.c \
   $(PROJ_DIR)/bsp/bsp.c \
   $(PROJ_DIR)/bsp/bsp_btn_ble.c \
-  $(PROJ_DIR)/main.c \
+	$(PROJ_DIR)/main.c \
+  $(PROJ_DIR)/src/ble_nts.c \
   $(SDK_ROOT)/components/ble/common/ble_advdata.c \
   $(SDK_ROOT)/components/ble/ble_advertising/ble_advertising.c \
   $(SDK_ROOT)/components/ble/common/ble_conn_params.c \
@@ -55,7 +56,8 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/drivers_nrf/adc \
   $(SDK_ROOT)/components/ble/ble_services/ble_bas_c \
   $(SDK_ROOT)/components/ble/ble_services/ble_hrs_c \
-  $(PROJ_DIR)/bsp \
+	$(PROJ_DIR)/bsp \
+  $(PROJ_DIR)/include \
   $(SDK_ROOT)/components/ble/ble_dtm \
   $(SDK_ROOT)/components/libraries/crc16 \
   $(SDK_ROOT)/components/libraries/mailbox \
@@ -159,7 +161,7 @@ CFLAGS +=  -Wall -Werror -O0 -g3
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 # keep every function in separate section, this allows linker to discard unused ones
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
-CFLAGS += -fno-builtin --short-enums 
+CFLAGS += -fno-builtin --short-enums
 # generate dependency output file
 CFLAGS += -MP -MD
 
@@ -231,6 +233,5 @@ flash: $(OUTPUT_DIRECTORY)/nrf52832_xxaa.hex
 # Flash softdevice
 flash_softdevice:
 	@echo Flashing: s132_nrf52_3.0.0_softdevice.hex
-	nrfjprog --program $(SDK_ROOT)/components/softdevice/s132/hex/s132_nrf52_3.0.0_softdevice.hex -f nrf52 --chiperase 
+	nrfjprog --program $(SDK_ROOT)/components/softdevice/s132/hex/s132_nrf52_3.0.0_softdevice.hex -f nrf52 --chiperase
 	nrfjprog --reset -f nrf52
-

@@ -32,7 +32,7 @@
 #include "softdevice_handler.h"
 #include "app_timer.h"
 #include "app_button.h"
-#include "ble_nus.h"
+#include "ble_nts.h"
 #include "app_uart.h"
 #include "app_util_platform.h"
 #include "bsp.h"
@@ -49,8 +49,7 @@
 #define CENTRAL_LINK_COUNT              0                                           /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 #define PERIPHERAL_LINK_COUNT           1                                           /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
 
-#define DEVICE_NAME                     "Nordic_UART"                               /**< Name of device. Will be included in the advertising data. */
-#define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
+#define DEVICE_NAME                     "nanoTrans"                               /**< Name of device. Will be included in the advertising data. */
 
 #define APP_ADV_INTERVAL                64                                          /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS      180                                         /**< The advertising timeout (in units of seconds). */
@@ -68,13 +67,8 @@
 
 #define DEAD_BEEF                       0xDEADBEEF                                  /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
-#define UART_TX_BUF_SIZE                256                                         /**< UART TX buffer size. */
-#define UART_RX_BUF_SIZE                256                                         /**< UART RX buffer size. */
-
-static ble_nus_t                        m_nus;                                      /**< Structure to identify the Nordic UART Service. */
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
-
-static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
+static ble_nts_t                        m_nts;
 
 
 /**@brief Function for assert macro callback.
@@ -124,40 +118,30 @@ static void gap_params_init(void)
 }
 
 
-/**@brief Function for handling the data from the Nordic UART Service.
- *
- * @details This function will process the data received from the Nordic UART BLE Service and send
- *          it to the UART module.
- *
- * @param[in] p_nus    Nordic UART Service structure.
- * @param[in] p_data   Data to be send to UART module.
- * @param[in] length   Length of the data.
- */
-/**@snippet [Handling the data received over BLE] */
-static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t length)
+void stop_request_write_handler(ble_nts_t * p_nts, uint16_t stop_id_requested)
 {
-    for (uint32_t i = 0; i < length; i++)
-    {
-        while (app_uart_put(p_data[i]) != NRF_SUCCESS);
-    }
-    while (app_uart_put('\r') != NRF_SUCCESS);
-    while (app_uart_put('\n') != NRF_SUCCESS);
-}
-/**@snippet [Handling the data received over BLE] */
 
+}
+
+void help_request_write_handler(ble_nts_t * p_nts, uint8_t help_requested)
+{
+
+}
 
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
 {
     uint32_t       err_code;
-    ble_nus_init_t nus_init;
+    ble_nts_init_t nts_init;
 
-    memset(&nus_init, 0, sizeof(nus_init));
+    memset(&nts_init, 0, sizeof(nts_init));
+    nts_init.stop_req_write_handler = stop_request_write_handler;
+    nts_init.help_req_write_handler = help_request_write_handler;
+    nts_init.route_no = 7;
+    nts_init.current_stop = 199;
 
-    nus_init.data_handler = nus_data_handler;
-
-    err_code = ble_nus_init(&m_nus, &nus_init);
+    err_code = ble_nts_init(&m_nts, &nts_init);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -370,8 +354,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 {
     ble_conn_params_on_ble_evt(p_ble_evt);
-    ble_nus_on_ble_evt(&m_nus, p_ble_evt);
     on_ble_evt(p_ble_evt);
+    ble_nts_on_ble_evt(&m_nts, p_ble_evt);
     ble_advertising_on_ble_evt(p_ble_evt);
     bsp_btn_ble_on_ble_evt(p_ble_evt);
 
@@ -450,82 +434,6 @@ void bsp_event_handler(bsp_event_t event)
     }
 }
 
-
-/**@brief   Function for handling app_uart events.
- *
- * @details This function will receive a single character from the app_uart module and append it to
- *          a string. The string will be be sent over BLE when the last character received was a
- *          'new line' i.e '\r\n' (hex 0x0D) or if the string has reached a length of
- *          @ref NUS_MAX_DATA_LENGTH.
- */
-/**@snippet [Handling the data received over UART] */
-void uart_event_handle(app_uart_evt_t * p_event)
-{
-    static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
-    static uint8_t index = 0;
-    uint32_t       err_code;
-
-    switch (p_event->evt_type)
-    {
-        case APP_UART_DATA_READY:
-            UNUSED_VARIABLE(app_uart_get(&data_array[index]));
-            index++;
-
-            if ((data_array[index - 1] == '\n') || (index >= (BLE_NUS_MAX_DATA_LEN)))
-            {
-                err_code = ble_nus_string_send(&m_nus, data_array, index);
-                if (err_code != NRF_ERROR_INVALID_STATE)
-                {
-                    APP_ERROR_CHECK(err_code);
-                }
-
-                index = 0;
-            }
-            break;
-
-        case APP_UART_COMMUNICATION_ERROR:
-            APP_ERROR_HANDLER(p_event->data.error_communication);
-            break;
-
-        case APP_UART_FIFO_ERROR:
-            APP_ERROR_HANDLER(p_event->data.error_code);
-            break;
-
-        default:
-            break;
-    }
-}
-/**@snippet [Handling the data received over UART] */
-
-
-/**@brief  Function for initializing the UART module.
- */
-/**@snippet [UART Initialization] */
-static void uart_init(void)
-{
-    uint32_t                     err_code;
-    const app_uart_comm_params_t comm_params =
-    {
-        RX_PIN_NUMBER,
-        TX_PIN_NUMBER,
-        RTS_PIN_NUMBER,
-        CTS_PIN_NUMBER,
-        APP_UART_FLOW_CONTROL_DISABLED,
-        false,
-        UART_BAUDRATE_BAUDRATE_Baud115200
-    };
-
-    APP_UART_FIFO_INIT( &comm_params,
-                       UART_RX_BUF_SIZE,
-                       UART_TX_BUF_SIZE,
-                       uart_event_handle,
-                       APP_IRQ_PRIORITY_LOW,
-                       err_code);
-    APP_ERROR_CHECK(err_code);
-}
-/**@snippet [UART Initialization] */
-
-
 /**@brief Function for initializing the Advertising functionality.
  */
 static void advertising_init(void)
@@ -534,6 +442,8 @@ static void advertising_init(void)
     ble_advdata_t          advdata;
     ble_advdata_t          scanrsp;
     ble_adv_modes_config_t options;
+
+    ble_uuid_t             m_adv_uuids[] = {{NTS_UUID_SERVICE, m_nts.uuid_type}};  /**< Universally unique service identifier. */
 
     // Build advertising data struct to pass into @ref ble_advertising_init.
     memset(&advdata, 0, sizeof(advdata));
@@ -593,7 +503,6 @@ int main(void)
 
     // Initialize.
     APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
-    uart_init();
 
     buttons_leds_init(&erase_bonds);
     ble_stack_init();
@@ -602,7 +511,6 @@ int main(void)
     advertising_init();
     conn_params_init();
 
-    printf("\r\nUART Start!\r\n");
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     APP_ERROR_CHECK(err_code);
 
