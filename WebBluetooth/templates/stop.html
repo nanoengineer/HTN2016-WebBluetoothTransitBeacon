@@ -20,6 +20,7 @@
     var helpRequestCharacteristic;
     var sub_key;
     var currentStop;
+    var alerted = 0;
 {##}
 {#    $(document).ready(function(){#}
 {#        subscribe()#}
@@ -104,8 +105,6 @@
     function selectStop(el){
         $('.selected-stop').removeClass('selected-stop');
         $(el).addClass('selected-stop');
-        $(el).parents().find('.stop-button').toggle('hidden');
-        $(el).parents().find('.stop-desc').html('Currently requested stop is <b>'+ $(el).html() + '</b>');
         store_key(el)
     }
 
@@ -153,6 +152,10 @@
                 })
                 .then(function(){
                     currentStopCharacteristic.addEventListener('characteristicvaluechanged', recalcStops);
+                    currentStopCharacteristic.readValue().then(function(value){
+                        currentStop = (new Uint16Array(value.buffer))[0];
+                        setTimeout(function(){$('#stop_' + currentStop).addClass('current-stop')}, 1000);
+                    })
                 }),
                 service.getCharacteristic('87de0004-51b5-43c3-9ccb-993004dd54aa')
                 .then(function(characteristic){
@@ -175,7 +178,9 @@
     }
 
     function helpAlert(){
-        helpRequestCharacteristic.writeValue(new Uint8Array([1]))
+        alerted = alerted === 0 ? 1 : 0;
+        helpRequestCharacteristic.writeValue(new Uint8Array([alerted]));
+
     }
 </script>
 <style>
