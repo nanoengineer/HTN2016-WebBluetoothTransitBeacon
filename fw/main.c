@@ -45,7 +45,7 @@
 #define NRF_BLE_MAX_MTU_SIZE            GATT_MTU_SIZE_DEFAULT                       /**< MTU size used in the softdevice enabling and to reply to a BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST event. */
 #endif
 
-#define APP_FEATURE_NOT_SUPPORTED       BLE_GATT_STATUS_ATTERR_APP_BEGIN + 2        /**< Reply when unsupported features are requested. */
+#define APP_FEATURE_NOT_SUPPORTED       BLE_GATT_STATUS_ATTERR_APP_BEGIN+2        /**< Reply when unsupported features are requested. */
 
 #define CENTRAL_LINK_COUNT              0                                           /**< Number of central links used by the application. When changing this number remember to adjust the RAM settings*/
 #define PERIPHERAL_LINK_COUNT           1                                           /**< Number of peripheral links used by the application. When changing this number remember to adjust the RAM settings*/
@@ -68,8 +68,8 @@
 
 #define DEAD_BEEF                       0xDEADBEEF                                  /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
-#define RGB_RED                         (22)
-#define RGB_GREEN                       (23)
+#define LED_RED                         (22)
+#define LED_GREEN                       (23)
 
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
 static ble_nts_t                        m_nts;
@@ -121,17 +121,28 @@ static void gap_params_init(void)
     APP_ERROR_CHECK(err_code);
 }
 
-
-void stop_request_write_handler(ble_nts_t * p_nts, uint16_t stop_id_requested)
+static void help_request_write_handler(ble_nts_t * p_nts, bool help_requested)
 {
-
+  if(help_requested)
+  {
+    nrf_gpio_pin_set(LED_RED);
+  }
+  {
+    nrf_gpio_pin_clear(LED_RED);
+  }
 }
 
-void help_request_write_handler(ble_nts_t * p_nts, uint8_t help_requested)
+static void stop_request_write_handler(ble_nts_t * p_nts, bool stop_requested)
 {
-
+  if(stop_requested)
+  {
+    nrf_gpio_pin_set(LED_GREEN);
+  }
+  else
+  {
+    nrf_gpio_pin_clear(LED_GREEN);
+  }
 }
-
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
@@ -497,7 +508,11 @@ static void power_manage(void)
     APP_ERROR_CHECK(err_code);
 }
 
-
+static void ext_led_init(void)
+{
+  nrf_gpio_cfg_output(LED_GREEN);
+  nrf_gpio_cfg_output(LED_GREEN);
+}
 /**@brief Application main function.
  */
 int main(void)
@@ -515,6 +530,7 @@ int main(void)
     advertising_init();
     conn_params_init();
 
+    ext_led_init();
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     APP_ERROR_CHECK(err_code);
 

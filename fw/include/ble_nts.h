@@ -24,8 +24,8 @@ extern "C" {
 // Forward declaration of the ble_nts_t type.
 typedef struct ble_nts_s ble_nts_t;
 
-typedef void (*ble_nts_stop_req_write_handler_t) (ble_nts_t * p_nts, uint16_t stop_id_requested);
-typedef void (*ble_nts_help_req_write_handler_t) (ble_nts_t * p_nts, uint8_t help_requested);
+typedef void (*ble_nts_stop_req_write_handler_t) (ble_nts_t * p_nts, bool stop_requested);
+typedef void (*ble_nts_help_req_write_handler_t) (ble_nts_t * p_nts, bool help_requested);
 
 
 typedef struct
@@ -56,9 +56,6 @@ uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init);
 
 void ble_nts_on_ble_evt(ble_nts_t * p_nts, ble_evt_t * p_ble_evt);
 
-
-uint32_t ble_nts_on_stop_req(ble_nts_t * p_nts, uint16_t stop_id_requested);
-uint32_t ble_nts_on_help_req(ble_nts_t * p_nts, uint8_t help_requested);
 
 
 #ifdef __cplusplus

@@ -291,13 +291,3 @@ uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 
     return NRF_SUCCESS;
 }
-
-uint32_t ble_nts_on_stop_req(ble_nts_t * p_nts, uint16_t stop_id_requested)
-{
-	return NRF_SUCCESS;
-}
-
-uint32_t ble_nts_on_help_req(ble_nts_t * p_nts, uint8_t help_requested)
-{
-	return NRF_SUCCESS;
-}
