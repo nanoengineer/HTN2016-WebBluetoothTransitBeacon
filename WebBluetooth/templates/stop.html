@@ -3,9 +3,12 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>I'm at a bus stop</title>
+<link rel="manifest" href="/static/manifest.json">
 <script src="/static/jquery-2.2.4.js"></script>
 <script src="/static/bootstrap-3.3.7.js"></script>
 <link rel="stylesheet" href="/static/bootstrap-3.3.7.css">
+
+<script src="/static/sw.js"></script>
 <script src="https://use.fontawesome.com/337c918e36.js"></script>
 <script type="text/javascript">
     var bluetoothDevice;
@@ -16,18 +19,49 @@
     var stopRequestCharacteristic;
     var helpRequestCharacteristic;
     var currentStop = 'stop_2';
-
+{##}
 {#    $(document).ready(function(){#}
+{#        subscribe()#}
 {#        var colors = ['red', 'blue', 'green', 'yellow', 'cyan', 'purple', 'orange'];#}
 {#        setInterval(function(){$('body').css('background-color', colors[Math.floor(Math.random() * colors.length)])}, 100)#}
 {#    });#}
+
+    function store_key(sub_key){
+        $.ajax
+    }
+
+    function subscribe(){
+        if ('serviceWorker' in navigator) {
+          console.log('Service Worker is supported');
+          navigator.serviceWorker.register('/static/sw.js').then(function(reg) {
+
+            console.log('hi');
+
+            // registration.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
+            //   console.log('endpoint:', sub.endpoint);
+            // });
+            // return navigator.serviceWorker.ready;
+            console.log('Service Worker is ready :^)', reg);
+            reg.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
+              console.log(sub);
+              var sub_key = sub.endpoint.split('/')[5];
+              store_key(sub_key)
+            });
+          }).catch(function(error) {
+            console.log('Service Worker error :^(', error);
+          });
+        }
+    }
 
     function expandSelected(el) {
         $(el).parent().find('.expanded').toggle('hidden')
     }
 
     function recalcStops(event){
-        debugger
+        currentStop = event.target.value.getUint8(0);
+        $('.current-stop').removeClass('current-stop');
+        $('#stop_' + currentStop).addClass('current-stop')
+
     }
 
     function selectStop(el){
@@ -44,7 +78,7 @@
     }
     function getStops(route_num){
         $.ajax({
-            url:'/stop/ajax/stops/' + route_num, type: 'GET',
+            url:'/ajax/stops/' + route_num, type: 'GET',
             success: function(res){
                 for (var key in res){
                     $('.stop-container').append('<div><button class="stop-button" id=' + key + ' onclick=selectStop(this)><i class="fa fa-bus" aria-hidden="true"></i> ' + res[key] + ' <i class="fa fa-hand-paper-o" aria-hidden="true"></i></button><div>')
@@ -78,8 +112,10 @@
                 service.getCharacteristic('87de0003-51b5-43c3-9ccb-993004dd54aa')
                 .then(function(characteristic){
                     currentStopCharacteristic = characteristic;
-{#                    currentStopCharacteristic.addEventListener('characteristicvaluechanged', recalcStops);#}
-
+                    return currentStopCharacteristic.startNotifications();
+                })
+                .then(function(){
+                    currentStopCharacteristic.addEventListener('characteristicvaluechanged', recalcStops);
                 }),
                 service.getCharacteristic('87de0004-51b5-43c3-9ccb-993004dd54aa')
                 .then(function(characteristic){
@@ -137,7 +173,7 @@
 </style>
 </head>
 
-<div class="row stop">
+<div class="row stop" style="margin: 0">
     {% for key, val in routes.iteritems() %}
     <div class="col-xs-12 col-md-6" style="text-align: center; display: inline-block; padding: 10px 20px;">
         <div class="row" style="margin:0">
@@ -155,7 +191,7 @@
 {% endfor %}
 </div>
 
-<div class="row stop">
+<div class="row stop" style="margin: 0">
     <div class="col-xs-12 col-md-12" style="text-align: center; display: inline-block; padding: 20px;">
         <div class="row">
             <a class="btn btn-default" style="width: 60%;background-color: #08789A; padding:0;color: white; height: 60px">
@@ -167,11 +203,11 @@
 
 
 
-<div class="row onboard" style="display: none">
+<div class="row onboard" style="display: none;margin: 0">
     <div class="col-xs-offset-1 col-xs-10" style="text-align: center; display: inline-block; padding: 20px;">
         <div class="row">
             <button class="btn btn-default" style="width:100%; padding: 20px 0; background-color: #08789A; color: white;">
-                <div class="col-xs-12 expanded" style="text-align: center;" onclick="expandSelected(this)"> Request a Stop </div>
+                <div class="col-xs-12 expanded" style="text-align: center;" onclick="expandSelected(this); subscribe()"> Request a Stop </div>
                 <div class="col-xs-12 expanded stop-container" style="text-align: center;padding-right:0; display: none">
                     <div class="stop-desc" onclick=reselectStop()></div>
                 </div>
@@ -181,7 +217,7 @@
     </div>
 </div>
 
-<div class="row onboard" style="display: none">
+<div class="row onboard" style="display: none; margin: 0">
     <div class="col-xs-offset-1 col-xs-10" style="text-align: center; display: inline-block; padding: 20px;">
         <div class="row">
             <button class="btn btn-default btn-danger" style="width:100%; padding: 20px 0; color: white;">
