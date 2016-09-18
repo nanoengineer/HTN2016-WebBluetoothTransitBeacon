@@ -38,6 +38,7 @@
 #include "bsp.h"
 #include "bsp_btn_ble.h"
 #include "nrf_gpio.h"
+#include "app_timer.h"
 
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 0                                           /**< Include the service_changed characteristic. If not enabled, the server's database cannot be changed for the lifetime of the device. */
 
@@ -74,23 +75,12 @@
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
 static ble_nts_t                        m_nts;
 
+APP_TIMER_DEF(m_stops_mock_timer_id);
 
-/**@brief Function for assert macro callback.
- *
- * @details This function will be called in case of an assert in the SoftDevice.
- *
- * @warning This handler is an example only and does not fit a final product. You need to analyse
- *          how your product is supposed to react in case of Assert.
- * @warning On assert from the SoftDevice, the system can only recover on reset.
- *
- * @param[in] line_num    Line number of the failing ASSERT call.
- * @param[in] p_file_name File name of the failing ASSERT call.
- */
 void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
-
 
 /**@brief Function for the GAP initialization.
  *
@@ -119,6 +109,20 @@ static void gap_params_init(void)
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
     APP_ERROR_CHECK(err_code);
+}
+
+static void notif_subscr_handler(ble_nts_t * p_nts, bool notif_subscr)
+{
+	uint32_t err_code;
+    if (notif_subscr)
+    {
+      err_code = app_timer_start(m_stops_mock_timer_id, APP_TIMER_TICKS(3000, APP_TIMER_PRESCALER), NULL);
+      APP_ERROR_CHECK(err_code);
+    }
+    else
+    {
+      app_timer_stop(m_stops_mock_timer_id);
+    }
 }
 
 static void help_request_write_handler(ble_nts_t * p_nts, bool help_requested)
@@ -154,8 +158,9 @@ static void services_init(void)
     memset(&nts_init, 0, sizeof(nts_init));
     nts_init.stop_req_write_handler = stop_request_write_handler;
     nts_init.help_req_write_handler = help_request_write_handler;
+    nts_init.notif_subscr_handler = notif_subscr_handler;
     nts_init.route_no = 7;
-    nts_init.current_stop = 199;
+    nts_init.current_stop = 2;
 
     err_code = ble_nts_init(&m_nts, &nts_init);
     APP_ERROR_CHECK(err_code);
@@ -281,6 +286,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
         case BLE_GAP_EVT_DISCONNECTED:
             err_code = bsp_indication_set(BSP_INDICATE_IDLE);
             APP_ERROR_CHECK(err_code);
+            app_timer_stop(m_stops_mock_timer_id);
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
             break; // BLE_GAP_EVT_DISCONNECTED
 
@@ -514,6 +520,41 @@ static void ext_led_init(void)
   nrf_gpio_cfg_output(LED_GREEN);
   nrf_gpio_cfg_output(LED_RED);
 }
+
+void stops_mock_timeout_handler(void * p_context)
+{
+  ret_code_t          err_code;
+  uint16_t            current_stop;
+  ble_gatts_value_t   value = {.len = sizeof(uint16_t), .offset = 0, .p_value = (uint8_t*)(&current_stop)};
+  err_code = sd_ble_gatts_value_get(m_conn_handle,
+                                    m_nts.current_stop_char_handles.value_handle,
+                                    &value);
+
+  APP_ERROR_CHECK(err_code);
+
+  if(current_stop <= 8)
+  {
+    current_stop++;
+  }
+  else
+  {
+    current_stop = 0;
+  }
+
+  err_code = ble_nts_current_stop_notify(&m_nts, &current_stop);
+  if (err_code != NRF_ERROR_INVALID_STATE)
+  {
+    APP_ERROR_CHECK(err_code);
+  }
+}
+
+static void timer_init(void)
+{
+  uint32_t err_code;
+  APP_TIMER_INIT(APP_TIMER_PRESCALER, APP_TIMER_OP_QUEUE_SIZE, false);
+  err_code = app_timer_create(&m_stops_mock_timer_id, APP_TIMER_MODE_REPEATED, stops_mock_timeout_handler);
+  APP_ERROR_CHECK(err_code);
+}
 /**@brief Application main function.
  */
 int main(void)
@@ -530,8 +571,10 @@ int main(void)
     services_init();
     advertising_init();
     conn_params_init();
-
     ext_led_init();
+    timer_init();
+
+
     err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
     APP_ERROR_CHECK(err_code);
 

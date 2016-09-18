@@ -38,6 +38,20 @@ static void on_write(ble_nts_t * p_nts, ble_evt_t * p_ble_evt)
     {
         p_nts->help_req_write_handler(p_nts, *(p_evt_write->data));
     }
+
+    else if ((p_evt_write->handle == p_nts->current_stop_char_handles.cccd_handle) &&
+        (p_evt_write->len == 2) &&
+        (p_nts->notif_subscr_handler != NULL))
+    {
+        if (*(p_evt_write->data))
+        {
+          p_nts->notif_subscr_handler(p_nts, true);
+        }
+        else
+        {
+          p_nts->notif_subscr_handler(p_nts, false);
+        }
+    }
 }
 
 
@@ -110,18 +124,26 @@ static uint32_t route_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_i
 static uint32_t current_stop_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
 {
     ble_gatts_char_md_t char_md;
+    ble_gatts_attr_md_t cccd_md;
     ble_gatts_attr_t    attr_char_value;
     ble_uuid_t          ble_uuid;
     ble_gatts_attr_md_t attr_md;
 
+    memset(&cccd_md, 0, sizeof(cccd_md));
+
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
+
+    cccd_md.vloc = BLE_GATTS_VLOC_STACK;
+
     memset(&char_md, 0, sizeof(char_md));
 
     char_md.char_props.read   = 1;
-    char_md.char_props.write  = 0;
+    char_md.char_props.notify = 1;
     char_md.p_char_user_desc  = NULL;
     char_md.p_char_pf         = NULL;
     char_md.p_user_desc_md    = NULL;
-    char_md.p_cccd_md         = NULL;
+    char_md.p_cccd_md         = &cccd_md;
     char_md.p_sccd_md         = NULL;
 
     ble_uuid.type = p_nts->uuid_type;
@@ -148,7 +170,7 @@ static uint32_t current_stop_char_add(ble_nts_t * p_nts, const ble_nts_init_t * 
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                            &char_md,
                                            &attr_char_value,
-                                           &p_nts->curren_stop_char_handles);
+                                           &p_nts->current_stop_char_handles);
 }
 
 static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
@@ -268,6 +290,7 @@ uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
     p_nts->conn_handle       = BLE_CONN_HANDLE_INVALID;
     p_nts->stop_req_write_handler = p_nts_init->stop_req_write_handler;
     p_nts->help_req_write_handler = p_nts_init->help_req_write_handler;
+    p_nts->notif_subscr_handler = p_nts_init->notif_subscr_handler;
 
     // Add service.
     ble_uuid128_t base_uuid = {NTS_UUID_BASE};
@@ -294,4 +317,21 @@ uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init)
     VERIFY_SUCCESS(err_code);
 
     return NRF_SUCCESS;
+}
+
+uint32_t ble_nts_current_stop_notify(ble_nts_t * p_nts, uint16_t * p_current_stop)
+{
+    ble_gatts_hvx_params_t hvx_params;
+    uint16_t               length = sizeof(uint16_t);
+
+    VERIFY_PARAM_NOT_NULL(p_nts);
+
+    memset(&hvx_params, 0, sizeof(hvx_params));
+
+    hvx_params.handle = p_nts->current_stop_char_handles.value_handle;
+    hvx_params.p_data = (uint8_t *)p_current_stop;
+    hvx_params.p_len  = &length;
+    hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+
+    return sd_ble_gatts_hvx(p_nts->conn_handle, &hvx_params);
 }

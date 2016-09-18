@@ -26,12 +26,14 @@ typedef struct ble_nts_s ble_nts_t;
 
 typedef void (*ble_nts_stop_req_write_handler_t) (ble_nts_t * p_nts, bool stop_requested);
 typedef void (*ble_nts_help_req_write_handler_t) (ble_nts_t * p_nts, bool help_requested);
+typedef void (*ble_nts_notif_subscr_handler_t) (ble_nts_t * p_nts, bool notif_subscr);
 
 
 typedef struct
 {
     ble_nts_stop_req_write_handler_t stop_req_write_handler;
     ble_nts_help_req_write_handler_t help_req_write_handler;
+    ble_nts_notif_subscr_handler_t   notif_subscr_handler;
     uint16_t                         route_no;
     uint16_t                         current_stop;
 } ble_nts_init_t;
@@ -42,21 +44,21 @@ struct ble_nts_s
     uint16_t                          service_handle;
     ble_gatts_char_handles_t          route_char_handles;
     ble_gatts_char_handles_t          stop_req_char_handles;
-    ble_gatts_char_handles_t          curren_stop_char_handles;
+    ble_gatts_char_handles_t          current_stop_char_handles;
     ble_gatts_char_handles_t          help_req_char_handles;
     uint8_t                           uuid_type;
     uint16_t                          conn_handle;
     ble_nts_stop_req_write_handler_t  stop_req_write_handler;
     ble_nts_help_req_write_handler_t  help_req_write_handler;
-};
+    ble_nts_notif_subscr_handler_t    notif_subscr_handler;
 
+};
 
 uint32_t ble_nts_init(ble_nts_t * p_nts, const ble_nts_init_t * p_nts_init);
 
-
 void ble_nts_on_ble_evt(ble_nts_t * p_nts, ble_evt_t * p_ble_evt);
 
-
+uint32_t ble_nts_current_stop_notify(ble_nts_t * p_nts, uint16_t * p_current_stop);
 
 #ifdef __cplusplus
 }
