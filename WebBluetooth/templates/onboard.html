@@ -4,7 +4,25 @@
 <title>I'm on a bus</title>
 <script src="/static/jquery-2.2.4.js"></script>
 <script src="/static/bootstrap-3.3.7.js"></script>
-
+<link rel="stylesheet" href="/static/bootstrap-3.3.7.css">
+<script type="text/javascript">
+    function beaconConnect(){
+        navigator.bluetooth.requestDevice({
+          filters: [{
+            services: ['87de0001-51b5-43c3-9ccb-993004dd54aa']
+          }]
+        })
+    }
+</script>
 </head>
 
-<div> Onboard page placeholder. </div>
+<div class="row">
+    <div class="col-xs-12 col-md-12" style="text-align: center; display: inline-block; padding: 20px;">
+        <div class="row">
+            <button class="btn btn-default btn-danger" style="width: 60%; padding:0;color: white; height: 60px">
+                <div style="line-height:60px" onclick="beaconConnect()">yo hold up get this creepy mothafucka off me</div>
+            </button>
+        </div>
+
+    </div>
+</div>

@@ -20,7 +20,20 @@
       "stop_6": ["9:16AM", "10:16AM", "11:16AM"],
       "stop_7": ["9:17AM", "10:17AM", "11:17AM"],
       "stop_8": ["9:18AM", "10:18AM", "11:18AM"],
-      "stop_9": ["9:19AM", "10:19AM", "11:19AM"]
+      "stop_9": ["9:19AM", "10:19AM", "11:19AM"],
+      "stop_10": ["9:20AM", "10:20AM", "11:20AM"]
+    },
+    "stop_names": {
+      "stop_1": "UW-Columbia",
+      "stop_2": "Columbia / King",
+      "stop_3": "Conestoga Mall",
+      "stop_4": "King / University",
+      "stop_5": "King / Bridgeport",
+      "stop_6": "Charles Terminal",
+      "stop_7": "King / Ottawa",
+      "stop_8": "Fourth / Connought",
+      "stop_9": "Weber / Kinzie",
+      "stop_10": "Fairview Park"
     }
   },
   "route_10":{
@@ -36,5 +49,6 @@
       "stop_9": ["9:09PM", "10:09PM", "11:09PM"]
     }
   }
-}}
+}
+}
 

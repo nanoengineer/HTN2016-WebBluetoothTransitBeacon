@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>I'm at a bus stop</title>
 <script src="/static/jquery-2.2.4.js"></script>
 <script src="/static/bootstrap-3.3.7.js"></script>
@@ -9,28 +10,59 @@
     function expandSelected(el) {
         $(el).find('.expanded').toggle('hidden')
     }
+
+    function beaconConnect(){
+        navigator.bluetooth.requestDevice({
+          filters: [{
+            services: ['87de0001-51b5-43c3-9ccb-993004dd54aa']
+          }]
+        })
+        .then(function(device){
+            return device.gatt.connect();
+        })
+        .then(function(server){
+          // Getting Battery Service...
+          return server.getPrimaryService('87de0001-51b5-43c3-9ccb-993004dd54aa');
+        })
+        .then(function(service) {
+          // Getting Battery Level Characteristic...
+          return service.getCharacteristic('87de0002-51b5-43c3-9ccb-993004dd54aa');
+        })
+        .then(function(characteristic) {
+          // Reading Battery Level...
+          return characteristic.readValue();
+        })
+        .then(function(value) {
+          window.location.href='/onboard/' + value.getUint8(0);
+        })
+    }
 </script>
 <style>
- .expanded {
-
- }
 </style>
 </head>
 
 <div class="row">
     {% for key, val in routes.iteritems() %}
-    <div class="col-xs-12 col-md-6" style="text-align: center; display: inline-block; padding: 20px;">
-        <div class="row">
-            <button class="btn btn-default" style="width: 80%;  background-color: #FCAD0F; color: white;" onclick="expandSelected(this)">
-                <div class="col-xs-6" style="text-align: left; "> {{ key }} {{ val.name }} </div>
-                <div style="text-align: right;">{{ val.stop_times }} Mins</div>
-                <div class="expanded" style="text-align: right; display: none">asdfasdf</div>
-
+    <div class="col-xs-12 col-md-6" style="text-align: center; display: inline-block; padding: 10px 20px;">
+        <div class="row" style="margin:0">
+            <button class="btn btn-default" style="width: 90%;  background-color: #FCAD0F; color: white;" onclick="expandSelected(this)">
+                <div class="col-xs-4" style="text-align: left; padding-left:0 "> {{ key }} {{ val.name }} </div>
+                <div class="col-xs-8" style="text-align: right; padding-right:0">Next Bus at {{ val.stops.next.strftime('%I:%M %p') }}</div>
+                {% for stop in val.stops.all %}
+                <div class="col-xs-8 col-xs-offset-4 expanded" style="text-align: right;padding-right:0; display: none">{{ stop.strftime('%I:%M %p') }}</div>
+                {% endfor %}
             </button>
         </div>
     </div>
 {% endfor %}
 </div>
 
-
-<a href="/onboard"> Im on a bus now YOLO</a>
+<div class="row">
+    <div class="col-xs-12 col-md-12" style="text-align: center; display: inline-block; padding: 20px;">
+        <div class="row">
+            <a class="btn btn-default" style="width: 60%;background-color: #08789A; padding:0;color: white; height: 60px">
+                <div style="line-height:60px;" onclick="beaconConnect()">CONNECT ME DADDY </div>
+            </a>
+        </div>
+    </div>
+</div>
