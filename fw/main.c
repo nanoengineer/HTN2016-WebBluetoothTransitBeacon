@@ -116,7 +116,7 @@ static void notif_subscr_handler(ble_nts_t * p_nts, bool notif_subscr)
 	uint32_t err_code;
     if (notif_subscr)
     {
-      err_code = app_timer_start(m_stops_mock_timer_id, APP_TIMER_TICKS(3000, APP_TIMER_PRESCALER), NULL);
+      err_code = app_timer_start(m_stops_mock_timer_id, APP_TIMER_TICKS(6000, APP_TIMER_PRESCALER), NULL);
       APP_ERROR_CHECK(err_code);
     }
     else
