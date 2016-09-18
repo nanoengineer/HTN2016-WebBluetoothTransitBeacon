@@ -152,10 +152,6 @@
                 })
                 .then(function(){
                     currentStopCharacteristic.addEventListener('characteristicvaluechanged', recalcStops);
-                    currentStopCharacteristic.readValue().then(function(value){
-                        currentStop = (new Uint16Array(value.buffer))[0];
-                        setTimeout(function(){$('#stop_' + currentStop).addClass('current-stop')}, 1000);
-                    })
                 }),
                 service.getCharacteristic('87de0004-51b5-43c3-9ccb-993004dd54aa')
                 .then(function(characteristic){
@@ -237,7 +233,7 @@
     <div class="col-xs-12 col-md-12" style="text-align: center; display: inline-block; padding: 20px;">
         <div class="row">
             <a class="btn btn-default" style="width: 60%;background-color: #08789A; padding:0;color: white; height: 60px">
-                <div style="line-height:60px;" onclick="beaconConnect()">CONNECT ME DADDY </div>
+                <div style="line-height:60px;" onclick="beaconConnect()">Connect me with my bus </div>
             </a>
         </div>
     </div>
@@ -263,7 +259,7 @@
     <div class="col-xs-offset-1 col-xs-10" style="text-align: center; display: inline-block; padding: 20px;">
         <div class="row">
             <button class="btn btn-default btn-danger" style="width:100%; padding: 20px 0; color: white;">
-                <div onclick="helpAlert()">yo hold up get this creepy mothafucka off me</div>
+                <div onclick="helpAlert()">Silent Alarm</div>
             </button>
         </div>
 
