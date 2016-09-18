@@ -18,6 +18,7 @@
     var currentStopCharacteristic;
     var stopRequestCharacteristic;
     var helpRequestCharacteristic;
+    var sub_key;
     var currentStop = 'stop_2';
 {##}
 {#    $(document).ready(function(){#}
@@ -26,8 +27,11 @@
 {#        setInterval(function(){$('body').css('background-color', colors[Math.floor(Math.random() * colors.length)])}, 100)#}
 {#    });#}
 
-    function store_key(sub_key){
-        $.ajax
+    function store_key(el) {
+        var stop_num = $(el).attr('id');
+        $.ajax({
+            url: '/ajax/push?' + $.param({sub_key: sub_key, stop_num: stop_num}), type: 'GET'
+        })
     }
 
     function subscribe(){
@@ -44,8 +48,7 @@
             console.log('Service Worker is ready :^)', reg);
             reg.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
               console.log(sub);
-              var sub_key = sub.endpoint.split('/')[5];
-              store_key(sub_key)
+              sub_key = sub.endpoint.split('/')[5];
             });
           }).catch(function(error) {
             console.log('Service Worker error :^(', error);
@@ -60,8 +63,31 @@
     function recalcStops(event){
         currentStop = event.target.value.getUint8(0);
         $('.current-stop').removeClass('current-stop');
-        $('#stop_' + currentStop).addClass('current-stop')
+        $('#stop_' + currentStop).addClass('current-stop');
+        getPushNotifications('stop_' + currentStop)
 
+    }
+
+    function getPushNotifications(stop_num){
+        $.ajax({
+            url:'/ajax/pull?' + $.param({stop_num:stop_num}), type:'GET',
+            success:function(res) {
+                for (var i = 0; i < res.length; i++) {
+                    sendPushNotification(res[i])
+                }
+            }
+        })
+    }
+
+    function sendPushNotification(reg_id){
+        $.ajax({
+            url:'https://gcm-http.googleapis.com/gcm/send',
+            contentType: 'application/json',
+            type:'POST',
+            headers:{"Authorization": "key=AIzaSyCJsyIvvZbErZdbZD3MJeOuoodkXP9yNek"},
+            data: "{\"registration_ids\":[\""+ reg_id + "\"]}",
+            processData: false
+        })
     }
 
     function selectStop(el){
@@ -69,7 +95,7 @@
         $(el).addClass('selected-stop');
         $(el).parents().find('.stop-button').toggle('hidden');
         $(el).parents().find('.stop-desc').html('Currently requested stop is <b>'+ $(el).html() + '</b>');
-
+        store_key(el)
     }
 
     function reselectStop(){

@@ -1,6 +1,6 @@
 from flask import Flask
 
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from helpers import helpers
 from datetime import datetime, timedelta
 
@@ -34,6 +34,20 @@ def stops(route_num):
     stops = helpers.get_route_stops(route_num)
     stop_names = stops.get('stop_names')
     return jsonify(**stop_names)
+
+@app.route("/ajax/push")
+def add_notifications():
+    stop_num = request.args.get('stop_num')
+    sub_key = request.args.get('sub_key')
+    helpers.write_push_notification(stop_num, sub_key)
+    return jsonify(True)
+
+
+@app.route("/ajax/pull")
+def get_notifications():
+    stop_num = request.args.get('stop_num')
+    return jsonify(helpers.retrieve_push_notifications(stop_num))
+
 
 if __name__ == "__main__":
     app.run()
