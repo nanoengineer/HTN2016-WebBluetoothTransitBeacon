@@ -26,10 +26,10 @@ static void on_write(ble_nts_t * p_nts, ble_evt_t * p_ble_evt)
     ble_gatts_evt_write_t * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
 
     if ((p_evt_write->handle == p_nts->stop_req_char_handles.value_handle) &&
-        (p_evt_write->len == 2) &&
+        (p_evt_write->len == 1) &&
         (p_nts->stop_req_write_handler != NULL))
     {
-        p_nts->stop_req_write_handler(p_nts, *((uint16_t *)(p_evt_write->data)));
+        p_nts->stop_req_write_handler(p_nts, *(p_evt_write->data));
     }
 
     else if ((p_evt_write->handle == p_nts->help_req_char_handles.value_handle) &&
@@ -182,7 +182,7 @@ static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
     memset(&attr_md, 0, sizeof(attr_md));
 
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&attr_md.write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
     attr_md.vloc       = BLE_GATTS_VLOC_STACK;
     attr_md.rd_auth    = 0;
     attr_md.wr_auth    = 0;
@@ -190,12 +190,14 @@ static uint32_t stop_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
 
     memset(&attr_char_value, 0, sizeof(attr_char_value));
 
+    uint8_t value_init = 0;
+
     attr_char_value.p_uuid       = &ble_uuid;
     attr_char_value.p_attr_md    = &attr_md;
     attr_char_value.init_len     = sizeof(uint8_t);
     attr_char_value.init_offs    = 0;
     attr_char_value.max_len      = sizeof(uint8_t);
-    attr_char_value.p_value      = NULL;
+    attr_char_value.p_value      = &value_init;
 
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                                &char_md,
@@ -234,7 +236,7 @@ static uint32_t help_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
     memset(&attr_md, 0, sizeof(attr_md));
 
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_NO_ACCESS(&attr_md.write_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
     attr_md.vloc       = BLE_GATTS_VLOC_STACK;
     attr_md.rd_auth    = 0;
     attr_md.wr_auth    = 0;
@@ -242,12 +244,14 @@ static uint32_t help_req_char_add(ble_nts_t * p_nts, const ble_nts_init_t * p_nt
 
     memset(&attr_char_value, 0, sizeof(attr_char_value));
 
+    uint8_t value_init = 0;
+
     attr_char_value.p_uuid       = &ble_uuid;
     attr_char_value.p_attr_md    = &attr_md;
     attr_char_value.init_len     = sizeof(uint8_t);
     attr_char_value.init_offs    = 0;
     attr_char_value.max_len      = sizeof(uint8_t);
-    attr_char_value.p_value      = NULL;
+    attr_char_value.p_value      = &value_init;
 
     return sd_ble_gatts_characteristic_add(p_nts->service_handle,
                                                &char_md,

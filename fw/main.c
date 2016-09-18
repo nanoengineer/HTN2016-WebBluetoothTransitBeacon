@@ -127,6 +127,7 @@ static void help_request_write_handler(ble_nts_t * p_nts, bool help_requested)
   {
     nrf_gpio_pin_set(LED_RED);
   }
+  else
   {
     nrf_gpio_pin_clear(LED_RED);
   }
@@ -511,7 +512,7 @@ static void power_manage(void)
 static void ext_led_init(void)
 {
   nrf_gpio_cfg_output(LED_GREEN);
-  nrf_gpio_cfg_output(LED_GREEN);
+  nrf_gpio_cfg_output(LED_RED);
 }
 /**@brief Application main function.
  */
