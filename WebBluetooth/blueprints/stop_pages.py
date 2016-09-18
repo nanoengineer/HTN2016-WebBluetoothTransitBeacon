@@ -1,15 +1,15 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, jsonify
 from helpers import helpers
-
 from datetime import datetime, timedelta
 import json
+import http
 
 stop_pages = Blueprint('stop_pages', __name__, template_folder='templates')
 
 
 @stop_pages.route("/")
 def test():
-    stop_num = "3"
+    stop_num = "2"
     today = datetime.now() - timedelta(hours=4)
     routes = helpers.get_all_routes()
     stops = helpers.get_all_stops()
@@ -26,3 +26,8 @@ def test():
 
     return render_template('stop.html', routes=routes)
 
+@stop_pages.route("/ajax/stops/<route_num>")
+def stops(route_num):
+    stops = helpers.get_route_stops(route_num)
+    stop_names = stops.get('stop_names')
+    return jsonify(**stop_names)

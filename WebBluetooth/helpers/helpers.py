@@ -21,6 +21,10 @@ def get_all_stops():
     return res.json()
     # return db.child("stops").get().val()
 
+def get_route_stops(route_num):
+    route_name = "route_" + route_num
+    res = requests.get('https://hackthenorth16-1532.firebaseio.com/stops/' + route_name + '.json')
+    return res.json()
 
 if __name__ == '__main__':
     import pdb; pdb.set_trace()
