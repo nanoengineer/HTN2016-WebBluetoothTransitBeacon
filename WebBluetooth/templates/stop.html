@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>I'm at a bus stop</title>
+<link rel="manifest" href="/static/manifest.json">
+<script src="/static/jquery-2.2.4.js"></script>
+<script src="/static/bootstrap-3.3.7.js"></script>
+<link rel="stylesheet" href="/static/bootstrap-3.3.7.css">
+
+<script src="/static/sw.js"></script>
+<script src="https://use.fontawesome.com/337c918e36.js"></script>
+<script type="text/javascript">
+    var bluetoothDevice;
+    var mainServer;
+    var mainService;
+    var routeCharacteristic;
+    var currentStopCharacteristic;
+    var stopRequestCharacteristic;
+    var helpRequestCharacteristic;
+    var sub_key;
+    var currentStop;
+    var alerted = 0;
+{##}
+{#    $(document).ready(function(){#}
+{#        subscribe()#}
+{#        var colors = ['red', 'blue', 'green', 'yellow', 'cyan', 'purple', 'orange'];#}
+{#        setInterval(function(){$('body').css('background-color', colors[Math.floor(Math.random() * colors.length)])}, 100)#}
+{#    });#}
+
+    function store_key(el) {
+        var stop_num = $(el).attr('id');
+        $.ajax({
+            url: '/ajax/push?' + $.param({sub_key: sub_key, stop_num: stop_num}), type: 'GET'
+        })
+    }
+
+    function subscribe(){
+        if ('serviceWorker' in navigator) {
+          console.log('Service Worker is supported');
+          navigator.serviceWorker.register('/static/sw.js').then(function(reg) {
+
+            console.log('hi');
+
+            // registration.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
+            //   console.log('endpoint:', sub.endpoint);
+            // });
+            // return navigator.serviceWorker.ready;
+            console.log('Service Worker is ready :^)', reg);
+            reg.pushManager.subscribe({userVisibleOnly: true}).then(function(sub) {
+              console.log(sub);
+              sub_key = sub.endpoint.split('/')[5];
+            });
+          }).catch(function(error) {
+            console.log('Service Worker error :^(', error);
+          });
+        }
+    }
+
+    function expandSelected(el) {
+        $(el).parent().find('.expanded').toggle('hidden')
+    }
+
+    function recalcStops(event){
+        stopRequestCharacteristic.writeValue(new Uint8Array([0]));
+        currentStop = event.target.value.getUint8(0);
+        $('.current-stop').removeClass('current-stop');
+        $('#stop_' + currentStop).addClass('current-stop');
+        getPushNotifications('stop_' + currentStop)
+
+    }
+
+    function getPushNotifications(stop_num){
+        if (stop_num[5] == 9) {
+            stop_num = 'stop_0'
+        }
+        else{
+            stop_num = "stop_" + (parseInt(stop_num[5]) + 1)
+        }
+        $.ajax({
+            url:'/ajax/pull?' + $.param({stop_num:stop_num}), type:'GET',
+            success:function(res) {
+                if (!res || res.length === 0){
+                    return
+                }
+                stopRequestCharacteristic.writeValue(new Uint8Array([1]));
+                for (var i = 0; i < res.length; i++) {
+                    sendPushNotification(res[i])
+                }
+            }
+        })
+    }
+
+    function sendPushNotification(reg_id){
+        $.ajax({
+            url:'https://gcm-http.googleapis.com/gcm/send',
+            contentType: 'application/json',
+            type:'POST',
+            headers:{"Authorization": "key=AIzaSyCJsyIvvZbErZdbZD3MJeOuoodkXP9yNek"},
+            data: "{\"registration_ids\":[\""+ reg_id + "\"]}",
+            processData: false
+        })
+    }
+
+    function selectStop(el){
+        $('.selected-stop').removeClass('selected-stop');
+        $(el).addClass('selected-stop');
+        store_key(el)
+    }
+
+    function reselectStop(){
+        $('.stop-button').show();
+        $('.stop-desc').html('');
+    }
+    function getStops(route_num){
+        $.ajax({
+            url:'/ajax/stops/' + route_num, type: 'GET',
+            success: function(res){
+                for (var key in res){
+                    $('.stop-container').append('<div><button class="stop-button" id=' + key + ' onclick=selectStop(this)><i class="fa fa-bus" aria-hidden="true"></i> ' + res[key] + ' <i class="fa fa-hand-paper-o" aria-hidden="true"></i></button><div>')
+                }
+                $('#' + currentStop).addClass('current-stop')
+            }
+        })
+    }
+
+    function beaconConnect(){
+        navigator.bluetooth.requestDevice({
+          filters: [{
+            services: ['87de0001-51b5-43c3-9ccb-993004dd54aa']
+          }]
+        })
+        .then(function(device){
+            bluetoothDevice = device;
+            return device.gatt.connect();
+        })
+        .then(function(server){
+          mainServer = server;
+          return server.getPrimaryService('87de0001-51b5-43c3-9ccb-993004dd54aa');
+        })
+        .then(function(service) {
+            mainService = service;
+            return Promise.all([
+                service.getCharacteristic('87de0002-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    routeCharacteristic = characteristic;
+                }),
+                service.getCharacteristic('87de0003-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    currentStopCharacteristic = characteristic;
+                    return currentStopCharacteristic.startNotifications();
+                })
+                .then(function(){
+                    currentStopCharacteristic.addEventListener('characteristicvaluechanged', recalcStops);
+                }),
+                service.getCharacteristic('87de0004-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    stopRequestCharacteristic = characteristic;
+                }),
+                service.getCharacteristic('87de0005-51b5-43c3-9ccb-993004dd54aa')
+                .then(function(characteristic){
+                    helpRequestCharacteristic = characteristic;
+                })
+            ])
+
+        })
+        .then(function() {
+            routeCharacteristic.readValue().then(function(value){
+                getStops((new Uint16Array(value.buffer))[0])
+            });
+            $('.stop').hide();
+            $('.onboard').show();
+        })
+    }
+
+    function helpAlert(){
+        alerted = alerted === 0 ? 1 : 0;
+        helpRequestCharacteristic.writeValue(new Uint8Array([alerted]));
+
+    }
+</script>
+<style>
+    .stop-container button{
+        height: 60px;
+        width: 80%;
+        background-color: transparent;
+        border: 1px solid white;
+        padding: 10px;
+        margin: 10px;
+        -webkit-border-radius:5px;
+        -moz-border-radius:5px;
+        border-radius:5px;
+    }
+    .current-stop {
+        color: #08789A !important;
+        background-color:white !important;
+    }
+    .fa{
+        display: none;
+    }
+    .current-stop .fa-bus{
+        display: inline;
+    }
+    .selected-stop {
+        font-size: 18px !important;
+    }
+
+    .selected-stop .fa-hand-paper-o {
+        display: inline;
+    }
+</style>
+</head>
+
+<div class="row stop" style="margin: 0">
+    {% for key, val in routes.iteritems() %}
+    <div class="col-xs-12 col-md-6" style="text-align: center; display: inline-block; padding: 10px 20px;">
+        <div class="row" style="margin:0">
+            <button class="btn btn-default" style="width: 90%;  background-color: #FCAD0F; color: white;" >
+            <div onclick="expandSelected(this)">
+                <div class="col-xs-4" style="text-align: left; padding-left:0 "> {{ key }} {{ val.name }} </div>
+                <div class="col-xs-8" style="text-align: right; padding-right:0">Next Bus at {{ val.stops.next.strftime('%I:%M %p') }}</div>
+                {% for stop in val.stops.all %}
+                <div class="col-xs-8 col-xs-offset-4 expanded" style="text-align: right;padding-right:0; display: none">{{ stop.strftime('%I:%M %p') }}</div>
+                {% endfor %}
+            </div>
+            </button>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
+<div class="row stop" style="margin: 0">
+    <div class="col-xs-12 col-md-12" style="text-align: center; display: inline-block; padding: 20px;">
+        <div class="row">
+            <a class="btn btn-default" style="width: 60%;background-color: #08789A; padding:0;color: white; height: 60px">
+                <div style="line-height:60px;" onclick="beaconConnect()">Connect me with my bus </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="row onboard" style="display: none;margin: 0">
+    <div class="col-xs-offset-1 col-xs-10" style="text-align: center; display: inline-block; padding: 20px;">
+        <div class="row">
+            <button class="btn btn-default" style="width:100%; padding: 20px 0; background-color: #08789A; color: white;">
+                <div class="col-xs-12 expanded" style="text-align: center;" onclick="expandSelected(this); subscribe()"> Request a Stop </div>
+                <div class="col-xs-12 expanded stop-container" style="text-align: center;padding-right:0; display: none">
+                    <div class="stop-desc" onclick=reselectStop()></div>
+                </div>
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="row onboard" style="display: none; margin: 0">
+    <div class="col-xs-offset-1 col-xs-10" style="text-align: center; display: inline-block; padding: 20px;">
+        <div class="row">
+            <button class="btn btn-default btn-danger" style="width:100%; padding: 20px 0; color: white;">
+                <div onclick="helpAlert()">Silent Alarm</div>
+            </button>
+        </div>
+
+    </div>
+</div>

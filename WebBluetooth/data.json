@@ -1,0 +1,55 @@
+{"routes": {
+  "7" : {
+    "name": "Mainline",
+    "stop_ids": ["1","2","3","4","5","6","7","8","9"]
+
+  },
+  "10" : {
+    "name": "Otherline",
+    "stop_ids": ["1","2","3","4","5","6","7","8","9"]
+  },
+  "13" : {
+    "name": "Harambe",
+    "stop_ids": ["2"]
+  }
+},
+"stops":{
+  "route_7":  {
+    "stop_times":{
+      "stop_0": ["9:10AM", "10:10AM", "11:10AM"],
+      "stop_1": ["9:12AM", "10:12AM", "11:12AM"],
+      "stop_2": ["9:10AM", "10:10AM", "11:10AM","12:15PM","1:43PM", "2:10PM", "3:31PM", "9:12PM", "10:02PM", "11:02PM"],
+      "stop_3": ["9:14AM", "10:14AM", "11:14AM"],
+      "stop_4": ["9:15AM", "10:15AM", "11:15AM"],
+      "stop_5": ["9:16AM", "10:16AM", "11:16AM"],
+      "stop_6": ["9:17AM", "10:17AM", "11:17AM"],
+      "stop_7": ["9:18AM", "10:18AM", "11:18AM"],
+      "stop_8": ["9:19AM", "10:19AM", "11:19AM"],
+      "stop_9": ["9:20AM", "10:20AM", "11:20AM"]
+    },
+    "stop_names": {
+      "stop_0": "UW-Columbia",
+      "stop_1": "Columbia / King",
+      "stop_2": "Conestoga Mall",
+      "stop_3": "King / University",
+      "stop_4": "King / Bridgeport",
+      "stop_5": "Charles Terminal",
+      "stop_6": "King / Ottawa",
+      "stop_7": "Fourth / Connought",
+      "stop_8": "Weber / Kinzie",
+      "stop_9": "Fairview Park"
+    }
+  },
+  "route_10":{
+    "stop_times":{
+      "stop_2": ["9:10AM", "10:10AM", "11:10AM","12:25PM","1:23PM", "2:20PM", "3:41PM", "9:22PM", "10:02PM", "11:02PM"]
+    }
+  },
+  "route_13":{
+    "stop_times":{
+      "stop_2": ["9:10AM", "10:10AM", "11:10AM","12:35PM","1:33PM", "2:30PM", "3:51PM", "9:32PM", "10:02PM", "11:02PM"]
+    }
+  }
+}
+}
+
